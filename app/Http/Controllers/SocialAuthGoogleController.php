@@ -12,6 +12,11 @@ use Exception;
 
 class SocialAuthGoogleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function redirect()
     {
         return Socialite::driver('google')->redirect();

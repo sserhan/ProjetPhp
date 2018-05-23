@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Items;
+use App\User;
 use CsvReader;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
@@ -12,6 +13,11 @@ use Excel;
 
 class ImportExportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     public function importExport()
     {
         return view('importExport');
@@ -19,23 +25,33 @@ class ImportExportController extends Controller
     }
 
     public function readCsv(Request $request){
-        $file=$request->file('import_file');
-        $file->store('public');
-        $nomFichier = asset('storage' . '/' . $file->getFileName());
-        $reader = CsvReader::open($nomFichier,';');
-        $user = array();
+        $path = $request->file('import_file')->storeAs(
+            'upload', $request->user()->id . '.csv');
+        //$reader = CsvReader::open(storage_path() . '/app/upload/' . $request->user()->id . '.csv',';');
         $utilisateur = new User();
-        while (($line = $reader->readLine()) !== false) {
-            $userString = array(explode( ';',$reader->readLine()));
-            $create['nom'] = $userString[0];
-            $create['prenom'] = $userString[1];
-            $create['email'] = $userString[2];
-            $create['password'] = md5(rand(1,10000));
-            $utilisateur->addNew($create);
-        }
-
-
+        $row = 1;
+        if (($handle = fopen(storage_path() . '/app/upload/' . $request->user()->id . '.csv', "r")) !== FALSE):
+            while (($data = fgetcsv($handle, 1000, ";")) !== FALSE):
+                $num = count($data);
+                $row++;
+                for ($c=0; $c < $num; $c++):
+                    if($row > 1):
+                        echo $data[0] . " | ";
+                        $utilisateur->nom = $data[$c];
+                        $utilisateur->prenom = $data[$c];
+                        $utilisateur->email = $data[$c];
+                        $utilisateur->password = md5(rand(1,10000));
+                        $utilisateur->google_id = 'manual';
+                        $test = $utilisateur->save();
+                        echo $test . ",";
+                    endif;
+                endfor;
+            endwhile;
+            fclose($handle);
+        endif;
     }
+
+
 
     /*
     public function loadExcelFile($file){

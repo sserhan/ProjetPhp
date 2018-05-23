@@ -17,8 +17,11 @@ class UserController extends Controller
 
     protected $nbrPerPage = 4;
 
+
+
     public function __construct(UserRepository $userRepository)
     {
+        $this->middleware('auth');
         $this->userRepository = $userRepository;
     }
 
